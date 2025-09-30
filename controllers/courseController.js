@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const courses = require("../models/courseSchema.js");
+const cart = require("../models/cartSchema.js");
 
 const addCourses = async (req, res) => {
   try {
@@ -53,6 +54,22 @@ const getCourses = async (req, res) => {
     return res.status(400).json({ success: false, message: error.message });
   }
 };
+
+const getCourse = async(req,res) => {
+     try{
+             const perticularCourse = courses.findOne({_id: req.params.id});
+
+             if(!perticularCourse){
+               return res.status(400).json({ success: false, message: "This course is not available in courseList!"})
+             }
+
+             return res.status(200).json({ success: true, data: perticularCourse, message: "course fetched successfully!"})
+
+     }
+     catch(error){
+        return res.status(400).json({ success: false, message:  error.message})
+     }
+}
 
 const updateCourse = async (req, res) => {
   try {
@@ -135,39 +152,49 @@ const incrementQuantity = async (req, res) => {
   }
 };
 
+
 const decrementQuantity = async (req, res) => {
   try {
-    const isCourseAvailableInCart = await courses.findOne({
-      _id: req.params.id,
-    });
-    if (!isCourseAvailableInCart) {
+
+    const course = await courses.findOne({ _id: req.params.id });
+
+    if (!course) {
       return res.status(400).json({
         success: false,
-        message: "This course is not available into the cart!",
+        message: "This course is not available in the cart!",
       });
     }
 
-    if (isCourseAvailableInCart.quantity <= 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Quantity cannot be less than 1!",
+    if (course.quantity === 1) {
+
+      await cart.findOneAndDelete({ courseId: req.params.id });
+
+      return res.status(200).json({
+        success: true,
+        message: "Course removed from cart!",
+      });
+    } else {
+ 
+      await courses.updateOne(
+        { _id: req.params.id },
+        { $inc: { quantity: -1 } }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Successfully decremented the course quantity!",
       });
     }
-
-    await courses.updateOne({ _id: req.params.id }, { $inc: { quantity: -1 } });
-
-    return res.status(200).json({
-      success: true,
-      message: "Successfully decrement the course quantity!",
-    });
   } catch (error) {
-    return res.status(400).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 module.exports = {
   addCourses,
   getCourses,
+  getCourse,
   updateCourse,
   deleteCourse,
   incrementQuantity,

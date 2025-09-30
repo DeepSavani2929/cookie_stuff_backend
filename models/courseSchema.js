@@ -22,6 +22,11 @@ const courseSchema = new mongoose.Schema(
       default: 1,
     },
 
+    buttonText: {
+       type: String,
+
+    },
+
     courseType: {
       type: String,
       enum: ["Features", "Recipes", "Healthy"],
