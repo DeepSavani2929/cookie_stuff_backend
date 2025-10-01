@@ -65,14 +65,19 @@ const loginUser = async (req, res) => {
     { expiresIn: "1d" }
   );
 
+  // res
+  //   .cookie("accessToken", token, {
+  //     httpOnly: true,
+  //     secure: true,
+  //     sameSite: "lax",
+  //     path: "/",
+  //     maxAge: 24 * 60 * 60 * 1000,
+  //   })
+  //   .status(200)
+  //   .json({ success: true, token, message: "User Login Successfully!" });
+
+    
   res
-    .cookie("accessToken", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 24 * 60 * 60 * 1000,
-    })
     .status(200)
     .json({ success: true, token, message: "User Login Successfully!" });
 };

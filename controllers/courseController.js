@@ -57,7 +57,7 @@ const getCourses = async (req, res) => {
 
 const getCourse = async(req,res) => {
      try{
-             const perticularCourse = courses.findOne({_id: req.params.id});
+             const perticularCourse = await courses.findOne({_id: req.params.id});
 
              if(!perticularCourse){
                return res.status(400).json({ success: false, message: "This course is not available in courseList!"})
