@@ -3,8 +3,6 @@ const {
   addCourses,
   updateCourse,
   deleteCourse,
-  incrementQuantity,
-  decrementQuantity,
   getCourses,
   getCourse,
 } = require("../controllers/courseController");
@@ -26,10 +24,8 @@ const upload = multer({ storage });
 
 router.post("/createCourse", upload.single("image"), addCourses);
 router.get("/getAllCourses", getCourses);
-router.get("/getCourse/:id",getCourse)
+router.get("/getCourse/:id", getCourse);
 router.put("/updateCourse/:id", upload.single("image"), updateCourse);
 router.delete("/deleteCourse/:id", deleteCourse);
-router.put("/incrementQuantity/:id", incrementQuantity);
-router.put("/decrementQuantity/:id", decrementQuantity);
 
 module.exports = router;

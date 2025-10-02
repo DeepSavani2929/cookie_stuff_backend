@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const courseSchema = new mongoose.Schema(
   {
     title: {
@@ -17,14 +18,8 @@ const courseSchema = new mongoose.Schema(
       required: true,
     },
 
-    quantity: {
-      type: Number,
-      default: 1,
-    },
-
     buttonText: {
-       type: String,
-
+      type: String,
     },
 
     courseType: {

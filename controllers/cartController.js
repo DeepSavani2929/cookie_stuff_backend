@@ -1,46 +1,43 @@
+const { mongoose } = require("mongoose");
 const cart = require("../models/cartSchema.js");
-const courses = require("../models/courseSchema.js");
 
 const addToCart = async (req, res) => {
   try {
-    const isCourseAvailableInCart = await cart.findOne({
+    const existingCartItem = await cart.findOne({
       courseId: req.params.id,
+      userId: req.user.id,
     });
 
-    if (!isCourseAvailableInCart) {
-      await cart.create({ courseId: req.params.id });
+    if (!existingCartItem) {
+      await cart.create({
+        courseId: req.params.id,
+        userId: req.user.id,
+        quantity: 1,
+      });
       return res
         .status(201)
         .json({ success: true, message: "Course added into the cart!" });
     }
 
-    const perticularCourse = await courses.findOne({ _id: req.params.id });
-    if (!perticularCourse) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Course is not found!" });
-    }
-
-    await courses.findByIdAndUpdate(
-      { _id: req.params.id },
-      { $inc: { quantity: 1 } }
-    );
+    await cart.findByIdAndUpdate(existingCartItem._id, {
+      $inc: { quantity: 1 },
+    });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Course is in the cart and quantity of that course is  Incremented Successfully!",
+      message: "Course quantity incremented in your cart!",
     });
   } catch (error) {
-    return res.status(400).json({ success: false, message: error.messsage });
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
 
 const getCartCourses = async (req, res) => {
   try {
-
-
     const allAddedCoursesInCart = await cart.aggregate([
+      {
+        $match: { userId: new mongoose.Types.ObjectId(req.user.id) },
+      },
       {
         $lookup: {
           from: "courses",
@@ -49,17 +46,15 @@ const getCartCourses = async (req, res) => {
           as: "courseDetails",
         },
       },
-      {
-        $unwind: "$courseDetails",
-      },
+      { $unwind: "$courseDetails" },
       {
         $addFields: {
           courseTitle: "$courseDetails.title",
           originalAmount: "$courseDetails.originalAmount",
           amount: "$courseDetails.amount",
-          quantity: "$courseDetails.quantity",
           courseType: "$courseDetails.courseType",
           image: "$courseDetails.image",
+          quantity: "$quantity",
         },
       },
       {
@@ -68,14 +63,6 @@ const getCartCourses = async (req, res) => {
         },
       },
     ]);
-
-    if (!allAddedCoursesInCart || allAddedCoursesInCart.length === 0) {
-      return res.status(200).json({
-        success: true,
-        data: [],
-        message: "No courses available in the cart",
-      });
-    }
 
     return res.status(200).json({
       success: true,
@@ -92,35 +79,81 @@ const getCartCourses = async (req, res) => {
 
 const deleteCartCourse = async (req, res) => {
   try {
-    const isCourseAvailable = await cart.findOne({ courseId: req.params.id });
+    const cartItem = await cart.findOne({
+      courseId: req.params.id,
+      userId: req.user.id,
+    });
 
-    if (!isCourseAvailable) {
+    if (!cartItem) {
       return res.status(404).json({
         success: false,
-        message: "This course is not found in the cart!",
+        message: "This course is not found in your cart!",
       });
     }
 
-    const course = await courses.findOne({ _id: isCourseAvailable.courseId });
+    await cart.deleteOne({ _id: cartItem._id });
+    return res.status(200).json({
+      success: true,
+      message: "Course removed from your cart!",
+    });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
 
-    if (!course) {
-      return res.status(400).json({
+const incrementQuantity = async (req, res) => {
+  try {
+    console.log(req.params.id);
+    const cartItem = await cart.findOne({
+      courseId: new mongoose.Types.ObjectId(req.params.id),
+      userId: req.user.id,
+    });
+
+    if (!cartItem) {
+      return res.status(404).json({
         success: false,
-        message: "Course not found in the CourseList!",
+        message: "This course is not found in your cart!",
       });
     }
 
-    await courses.updateOne(
-      { _id: isCourseAvailable.courseId },
-      { $set: { quantity: 1 } }
-    );
-
-    await cart.deleteOne({ _id: isCourseAvailable._id });
+    await cart.findByIdAndUpdate(cartItem._id, { $inc: { quantity: 1 } });
 
     return res.status(200).json({
       success: true,
-      message: "Course deleted from cart successfully!",
+      message: "Successfully incremented course quantity in your cart!",
     });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const decrementQuantity = async (req, res) => {
+  try {
+    const cartItem = await cart.findOne({
+      courseId: req.params.id,
+      userId: req.user.id,
+    });
+
+    if (!cartItem) {
+      return res.status(404).json({
+        success: false,
+        message: "This course is not found in your cart!",
+      });
+    }
+
+    if (cartItem.quantity > 1) {
+      await cart.findByIdAndUpdate(cartItem._id, { $inc: { quantity: -1 } });
+      return res.status(200).json({
+        success: true,
+        message: "Successfully decremented course quantity in your cart!",
+      });
+    } else {
+      await cart.deleteOne({ _id: cartItem._id });
+      return res.status(200).json({
+        success: true,
+        message: "Course removed from your cart!",
+      });
+    }
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message });
   }
@@ -130,4 +163,6 @@ module.exports = {
   getCartCourses,
   addToCart,
   deleteCartCourse,
+  incrementQuantity,
+  decrementQuantity,
 };

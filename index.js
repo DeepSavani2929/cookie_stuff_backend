@@ -5,13 +5,14 @@ const app = express();
 const cors = require("cors");
 const port = process.env.PORT || 4000;
 const router = require("./routes/index.js");
+const cookieParser = require("cookie-parser");
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(
   cors({
     origin: process.env.FRONT_URL,
     credentials: true,
-    withCredentials: true,
   })
 );
 
